@@ -1,0 +1,121 @@
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+import plotly.express as px
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+pd.options.display.max_rows = 400
+
+df = pd.read_csv('C:\\Users\\ghadad\\Desktop\\Gal\\CV\\JupyterProjectForCV\\BigmacPrice.csv')
+df
+
+df['date'] = pd.to_datetime(df.date)
+df['year'] = df.date.dt.year
+df['month'] = df.date.dt.month
+df.drop('date', axis=1, inplace=True)
+
+grouped = df.groupby(['year', 'currency_code', 'name'])[['local_price', 'dollar_ex', 'dollar_price']].mean().reset_index()
+
+df = grouped.copy()
+
+low_count = pd.DataFrame(grouped.name.value_counts())
+low_count = low_count.reset_index()
+low_count.columns = ['name', 'count']
+name = low_count[low_count['count'] < 15]
+name = [n for n in name.name]
+
+for n in name:
+    grouped['name'] = grouped['name'].str.replace(n, 'drop')
+    
+grouped = grouped[grouped.name != 'drop']
+
+grouped['dollar_price'] = round(grouped['dollar_price'], 2)
+
+grouped = grouped[grouped.name != 'Euro area']
+
+continent = {'Argentina': 'South America',
+             'Australia': 'Oceania/S. Africa',
+             'Brazil': 'South America',
+             'Canada': 'North America',
+             'Switzerland': 'Western Europe',
+             'Chile': 'South America',
+             'China': 'East Asia',
+             'Czech Republic': 'Eastern Europe',
+             'Denmark': 'Western Europe',
+             'Euro area': 'Europe',
+             'Britain': 'Western Europe',
+             'Hong Kong': 'East Asia',
+             'Hungary': 'Eastern Europe',
+             'Israel': 'West Asia',
+             'Indonesia': 'South Asia',
+             'Japan': 'East Asia',
+             'South Korea': 'East Asia',
+             'Mexico': 'North America',
+             'Malaysia': 'South Asia',
+             'New Zealand': 'Oceania/S. Africa',
+             'Poland': 'Eastern Europe',
+             'Russia': 'Eastern Europe',
+             'Sweden': 'Western Europe',
+             'Singapore': 'South Asia',
+             'Thailand': 'South Asia',
+             'Taiwan': 'East Asia',
+             'United States': 'North America',
+             'South Africa': 'Oceania/S. Africa',
+             'Philippines': 'East Asia',
+             'Norway': 'Western Europe',
+             'Peru': 'South America',
+             'Turkey': 'Middle East',
+             'Egypt': 'Middle East',
+             'Colombia': 'South America',
+             'Costa Rica': 'North America',
+             'Sri Lanka': 'South Asia',
+             'Pakistan': 'Middle East',
+             'Saudi Arabia': 'Middle East',
+             'Ukraine': 'Eastern Europe',
+             'Uruguay': 'South America'}
+
+grouped['continent'] = grouped.name.map(continent)
+grouped.groupby('continent')['name'].nunique()
+
+eastAsia = grouped[grouped.continent == 'East Asia'].copy()
+eastEurope = grouped[grouped.continent == 'Eastern Europe'].copy()
+midEast = grouped[grouped.continent == 'Middle East'].copy()
+northAmerica = grouped[grouped.continent == 'North America'].copy()
+oceania = grouped[grouped.continent == 'Oceania/S. Africa'].copy()
+southAmerica = grouped[grouped.continent == 'South America'].copy()
+southAsia = grouped[grouped.continent == 'South Asia'].copy()
+westEurope = grouped[grouped.continent == 'Western Europe'].copy()
+westAsia = grouped[grouped.continent == 'West Asia'].copy()
+
+blocks = [eastAsia, eastEurope, midEast, northAmerica, oceania, southAmerica, southAsia, westEurope, westAsia]
+
+plt.style.use('fivethirtyeight')
+for block in blocks:
+    plt.figure(figsize=(14,7))
+    sns.lineplot(data=block, x='year', y='dollar_price', hue='name')
+    #plt.ylabel(None)
+    plt.xlabel(None)
+    plt.xticks([2000,2005,2010,2015,2020])
+    plt.show()
+
+bigmac = df.copy()
+bigmac = bigmac[bigmac.year == 2020]
+bigmac['ratio'] = bigmac['dollar_price'] / 5.67
+plt.figure(figsize=(14,21))
+
+sns.barplot(data=bigmac, y='name', x='ratio', palette='cividis')
+
+plt.axvline(x=1, linestyle='solid', color='yellow')
+#plt.xlabel(None)
+#plt.ylabel(None)
+plt.title("\nPrice ratio between US Big Mac and Other Countries Big Mac\n")
+plt.show()
+
+import plotly.express as px
+
+fig = px.funnel(df, x="dollar_price", y="name", animation_frame="year", #animation_group="country",
+        color="name", hover_name="name",range_x=[0.1,10],log_x=True)
+
+fig.show()
+
